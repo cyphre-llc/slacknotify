@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<info>
+	<id>slacknotify</id>
+	<name>SlackNotify</name>
+	<description>Notifies you of activity via Slack.</description>
+	<version>1.0.0</version>
+	<licence>AGPL</licence>
+	<author>Ben Collins</author>
+	<require>4</require>
+</info>
