@@ -6,5 +6,5 @@
 	<version>1.0.0</version>
 	<licence>AGPL</licence>
 	<author>Ben Collins</author>
-	<require>4</require>
+	<require>7</require>
 </info>
