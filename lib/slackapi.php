@@ -1,4 +1,6 @@
 <?php
+
+namespace OCA\SlackNotify;
 /**
  * Simple abstraction of Slack API
  *
@@ -9,7 +11,7 @@
  * @author  Yong Zhen <yz@stargate.io>
  * @version  1.0.0
  */
-class OC_SlackAPI {
+class SlackAPI {
 
   private $api_token;
   private $api_endpoint = 'https://slack.com/api/<method>';
