@@ -12,65 +12,94 @@ class Hooks {
 	 * All other events has to be triggered by the apps.
 	 */
 	public static function register() {
-		\OCP\Util::connectHook('OC_Filesystem', 'post_create', 'OCA\SlackNotify\Hooks', 'fileCreate');
-		\OCP\Util::connectHook('OC_Filesystem', 'post_update', 'OCA\SlackNotify\Hooks', 'fileUpdate');
-		\OCP\Util::connectHook('OC_Filesystem', 'delete', 'OCA\SlackNotify\Hooks', 'fileDelete');
-		\OCP\Util::connectHook('OCP\Share', 'post_shared', 'OCA\SlackNotify\Hooks', 'share');
-
-		\OCP\Util::connectHook('OC_User', 'post_deleteUser', 'OCA\SlackNotify\Hooks', 'deleteUser');
+		// The connector after Activity App stores an entry in activity_mq
+		\OCP\Util::connectHook('OC_Activity', 'post_email', 'OCA\SlackNotify\Hooks', 'sendNotification');
 	}
 
+        /**
+         * Split the path from the filename string
+         *
+         * @param string $filename
+         * @return array Array with path and filename
+         */
+        private static function splitPathFromFilename($filename) {
+                if (strrpos($filename, '/') !== false) {
+                        return array(
+                                trim(substr($filename, 0, strrpos($filename, '/')), '/'),
+                                substr($filename, strrpos($filename, '/') + 1),
+                        );
+                }
+                return array('', $filename);
+        }
+
+        /**
+         * Prepares a file parameter for usage
+         *
+         * Removes the path from filenames and adds link syntax
+         *
+         * @param string $param
+         * @return string
+         */
+	private static function prepareFileParam($param) {
+		$rootView = new \OC\Files\View('');
+                $is_dir = $rootView->is_dir('/' . \OCP\User::getUser() . '/files' . $param);
+
+                if ($is_dir) {
+                        $fileLink = \OCP\Util::linkToAbsolute('files', 'index.php', array('dir' => $param));
+                } else {
+                        $parentDir = (substr_count($param, '/') == 1) ? '/' : dirname($param);
+                        $fileName = basename($param);
+                        $fileLink = \OCP\Util::linkToAbsolute('files', 'index.php', array(
+                                'dir' => $parentDir,
+                                'scrollto' => $fileName,
+                        ));
+                }
+
+                $param = trim($param, '/');
+                list($path, $name) = self::splitPathFromFilename($param);
+                if ($path === '') {
+			return '<' . $fileLink . '|' . \OCP\Util::sanitizeHTML($param) . '>';
+                }
+
+		return '<' . $fileLink . '|' . \OCP\Util::sanitizeHTML($name) . '>';
+        }
+
 	/**
-	 * @brief Store the create hook events
-	 * @param array $params The hook params
+	 * @brief Accepts arguments from Activity App to use for Slack
+	 * @params Values from Activity
+	 *
+	 * array(
+	 *	'app'                   => $app,
+	 *	'subject'               => $subject,
+	 *	'subjectparams' => $subjectParams,
+	 *	'affecteduser'  => $affectedUser,
+	 *	'timestamp'             => $timestamp,
+	 *	'type'                  => $type,
+	 *	'latest_send'   => $latestSendTime,
+	 * );
 	 */
-        public static function fileCreate($params) {
-		if (\OCP\User::getUser() === false)
-			return;
+	public static function sendNotification($params) {
+		if ($params['app'] !== 'files')
+			continue;
 
-		self::slackSend("Created files...", $params['path']);
-	}
+		$user = \OCP\User::getUser();
+		$object = self::prepareFileParam($params['subjectparams'][0]);
 
-	/**
-	 * @brief Store the update hook events
-	 * @param array $params The hook params
-	 */
-	public static function fileUpdate($params) {
-		self::slackSend("Updated files...", $params['path']);
-	}
-
-	/**
-	 * @brief Store the delete hook events
-	 * @param array $params The hook params
-	 */
-	public static function fileDelete($params) {
-		self::slackSend("Deleted files...", $params['path']);
-	}
-
-	/**
-	 * @brief Manage sharing events
-	 * @param array $params The hook params
-	 */
-	public static function share($params) {
-		if ($params['itemType'] !== 'file' and $params['itemType'] !== 'folder')
-			return;
-
-		if ($params['shareWith']) {
-			if ($params['shareType'] == \OCP\Share::SHARE_TYPE_USER) {
-				self::slackSend("Files shared to a user...", $params['path']);
-			} else if ($params['shareType'] == \OCP\Share::SHARE_TYPE_GROUP) {
-				self::slackSend("Files shared...", $params['path']);
-			}
+		if (substr($params['subject'], -5) === '_self') {
+			// You (created|deleted|changed) FILE
+			$msg = "You " . substr($params['subject'], 0, -5) .
+				" " . $object;
 		} else {
-			self::slackSend("Files shared with you...", $params['path']);
+			
+			// FILE was (created|deleted|changed) by OTHER
+			// TODO Link OTHER to Slack user, if they have enabled it
+			// https://api.slack.com/docs/formatting
+			$msg = $other . " was " .
+				substr($params['activity'], 0, -3) . " by " .
+				$user;
 		}
-	}
 
-	/**
-	 * Delete remaining activities and emails when a user is deleted
-	 * @param array $params The hook params
-	 */
-        public static function deleteUser($params) {
+		self::slackSend($params['affecteduser'], $msg);
 	}
 
 	/** PRIVATE Interfaces **/
@@ -79,11 +108,7 @@ class Hooks {
 	 * @brief Call Slack API
 	 * @msg Message to print to user
 	 */
-	private static function slackSend($pre, $msg) {
-		$l = $this->getLanguage($lang);
-		$dataHelper = new \OCA\Activity\DataHelper(\OC::$server->getActivityManager(), new ParameterHelper(new \OC\Files\View(''), $l), $l);
-
-		$user = \OCP\User::getUser();
+	private static function slackSend($user, $msg) {
 		$config = \OC::$server->getConfig();
 		$xoxp = $config->getUserValue($user, 'slacknotify', 'xoxp', null);
 		$channel = $config->getUserValue($user, 'slacknotify', 'channel', null);
@@ -98,9 +123,9 @@ class Hooks {
 		$Slack = new \OCA\SlackNotify\SlackAPI($xoxp);
 		$Slack->call('chat.postMessage', array(
 			'icon_url' => 'https://files.cyphre.com/themes/svy/core/img/favicon.png',
-			'text' => $pre,
 			'channel' => $channel,
 			'username' => 'Cyphre',
+			'parse' => 'none',
 			'attachments' => $attachments,
 		));
 	}
