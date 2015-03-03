@@ -30,7 +30,6 @@ if (!empty($slackClientID) and !empty($slackClientSecret)) {
 		}
 
 		$redirect_uri = \OC_Helper::linkToAbsolute('slacknotify', 'ajax/auth-handle.php');
-		\OCP\Util::writeLog('slacknotify', $redirect_uri, \OCP\Util::ERROR);
 
 		$url = "https://slack.com/oauth/authorize?client_id=" .
 			\OCP\Util::encodePath($slackClientID) .
