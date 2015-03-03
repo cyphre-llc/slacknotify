@@ -20,7 +20,7 @@ class SlackAPI {
    * Create a new instance
    * @param string $api_token Your Slack api bearer token
    */
-  function __construct($api_token){
+  function __construct($api_token = null){
     $this->api_token = $api_token;
   }
 
@@ -44,7 +44,8 @@ class SlackAPI {
    */
   private function request($method, $args = array(), $timeout = 10){
     $url = str_replace('<method>', $method, $this->api_endpoint);
-    $args['token'] = $this->api_token;
+    if (!empty($this->api_token))
+		$args['token'] = $this->api_token;
 
     if (function_exists('curl_version')){
       $ch = curl_init();

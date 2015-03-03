@@ -73,7 +73,7 @@ class Hooks {
 
 	/**
 	 * @brief Call Slack API
-	 * @msg Message to print to use
+	 * @msg Message to print to user
 	 */
 	private static function slackSend($msg) {
 		$user = \OCP\User::getUser();
