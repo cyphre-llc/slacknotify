@@ -1,6 +1,8 @@
 <?php
 namespace OCA\SlackNotify;
 
+use \OCP\Config;
+
 /**
  * @brief The class to handle the filesystem hooks
  */
@@ -26,7 +28,7 @@ class Hooks {
 		if (\OCP\User::getUser() === false)
 			return;
 
-		self::slackSend("Created \"" . $params['path'] . "\"");
+		self::slackSend("Created files...", $params['path']);
 	}
 
 	/**
@@ -34,7 +36,7 @@ class Hooks {
 	 * @param array $params The hook params
 	 */
 	public static function fileUpdate($params) {
-		self::slackSend("Updated \"" . $params['path'] . "\"");
+		self::slackSend("Updated files...", $params['path']);
 	}
 
 	/**
@@ -42,7 +44,7 @@ class Hooks {
 	 * @param array $params The hook params
 	 */
 	public static function fileDelete($params) {
-		self::slackSend("Deleted \"" . $params['path'] . "\"");
+		self::slackSend("Deleted files...", $params['path']);
 	}
 
 	/**
@@ -55,12 +57,12 @@ class Hooks {
 
 		if ($params['shareWith']) {
 			if ($params['shareType'] == \OCP\Share::SHARE_TYPE_USER) {
-				self::slackSend("Shared \"" . $params['path'] . "\" a user");
+				self::slackSend("Files shared to a user...", $params['path']);
 			} else if ($params['shareType'] == \OCP\Share::SHARE_TYPE_GROUP) {
-				self::slackSend("Shared \"" . $params['path'] . "\" a group");
+				self::slackSend("Files shared...", $params['path']);
 			}
 		} else {
-			self::slackSend("Shared \"" . $params['path'] . "\" with you");
+			self::slackSend("Files shared with you...", $params['path']);
 		}
 	}
 
@@ -71,11 +73,16 @@ class Hooks {
         public static function deleteUser($params) {
 	}
 
+	/** PRIVATE Interfaces **/
+
 	/**
 	 * @brief Call Slack API
 	 * @msg Message to print to user
 	 */
-	private static function slackSend($msg) {
+	private static function slackSend($pre, $msg) {
+		$l = $this->getLanguage($lang);
+		$dataHelper = new \OCA\Activity\DataHelper(\OC::$server->getActivityManager(), new ParameterHelper(new \OC\Files\View(''), $l), $l);
+
 		$user = \OCP\User::getUser();
 		$config = \OC::$server->getConfig();
 		$xoxp = $config->getUserValue($user, 'slacknotify', 'xoxp', null);
@@ -83,12 +90,18 @@ class Hooks {
 		if (empty($xoxp) or empty($channel))
 			return;
 
+		$attachments = array();
+		$attachments[] = array('text' => $msg, 'color' => '#232323');
+
+		$attachments = json_encode($attachments);
+
 		$Slack = new \OCA\SlackNotify\SlackAPI($xoxp);
 		$Slack->call('chat.postMessage', array(
 			'icon_url' => 'https://files.cyphre.com/themes/svy/core/img/favicon.png',
+			'text' => $pre,
 			'channel' => $channel,
 			'username' => 'Cyphre',
-			'text' => $msg,
+			'attachments' => $attachments,
 		));
 	}
 }
