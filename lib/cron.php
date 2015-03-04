@@ -87,6 +87,20 @@ function slackSend($xoxp, $user, $msgs)
 	));
 }
 
+function getNotifications($user)
+{
+	$lock = new \OCA\SlackNotify\ExclusiveLock("/tmp/slacknotify");
+	if (!$lock->lock())
+                return array();
+
+	$notif = getUserValue($user, 'notifications');
+	clearNotifications($user);
+
+	$lock->unlock();
+
+	return $notif ? unserialize($notif) : array();
+}
+
 
 $res = $db->query("SELECT * FROM " . $CONFIG['dbtableprefix'] .
 	"preferences " . "WHERE appid='slacknotify' AND configkey='xoxp'");
@@ -98,18 +112,10 @@ while ($row = $res->fetch_array()) {
 	$user = $row['userid'];
 	$xoxp = $row['configvalue'];
 
-	$lock = new \OCA\SlackNotify\ExclusiveLock("/tmp/slacknotify");
-	if (!$lock->lock())
+	$notif = getNotifications($user);
+
+	if (empty($notif))
 		continue;
-
-	$notif = getUserValue($user, 'notifications');
-
-	if (empty($notif)) {
-		$lock->unlock();
-		continue;
-	}
-
-	$notif = unserialize($notif);
 
 	$msgs = array();
 
@@ -121,24 +127,20 @@ while ($row = $res->fetch_array()) {
 		// First time seeing this person
 		if (empty($msgs[$person])) {
 			$msgs[$person] = array(
-				$action => "$person $action $object: ",
+				$action => "$person $action: $object",
 			);
 			continue;
 		}
 
 		// First time seeing this action for this person
 		if (empty($msgs[$person][$action])) {
-			$msgs[$person][$action] = "$person $action $object: ";
+			$msgs[$person][$action] = "$person $action: $object";
 			continue;
 		}
 
-		// We've seen this, so just append object
+		// We've seen this person and action, so just append object
 		$msgs[$person][$action] .= ", $object";
 	}
 
 	slackSend($xoxp, $user, $msgs);
-
-	clearNotifications($user);
-
-	$lock->unlock();
 }
