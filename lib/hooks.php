@@ -14,7 +14,7 @@ class Hooks {
 	 */
 	public static function register() {
 		// The connector after Activity App stores an entry in activity_mq
-		Util::connectHook('OC_Activity', 'post_email', 'OCA\SlackNotify\Hooks', 'processOne');
+		Util::connectHook('OC_Activity', 'post_event', 'OCA\SlackNotify\Hooks', 'processOne');
 	}
 
         /**
