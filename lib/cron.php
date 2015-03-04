@@ -57,8 +57,16 @@ function slackSend($xoxp, $user, $msgs)
 	$attachments = array();
 
 	foreach ($msgs as $person) {
-		foreach ($person as $target)
-			$attachments[] = array('text' => $target, 'color' => '#232323');
+		foreach ($person as $target) {
+			$pattern = '/<[^|]+\|([^>]+)>/i';
+			$replacement = '$1';
+			$fallback = preg_replace($pattern, $replacement, $target);
+			$attachments[] = array(
+				'text' => $target,
+				'color' => '#232323',
+				'fallback' => $fallback,
+			);
+		}
 	}
 
 	$attachments = json_encode($attachments);
@@ -69,7 +77,6 @@ function slackSend($xoxp, $user, $msgs)
 		'channel' => $channel,
 		'username' => 'Cyphre',
 		'parse' => 'none',
-		'fallback' => 'Cyphre activity',
 		'attachments' => $attachments,
 	));
 }
