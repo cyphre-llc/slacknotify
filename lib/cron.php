@@ -121,14 +121,14 @@ while ($row = $res->fetch_array()) {
 		// First time seeing this person
 		if (empty($msgs[$person])) {
 			$msgs[$person] = array(
-				$action => "$person $action $object",
+				$action => "$person $action $object: ",
 			);
 			continue;
 		}
 
 		// First time seeing this action for this person
 		if (empty($msgs[$person][$action])) {
-			$msgs[$person][$action] = "$person $action $object";
+			$msgs[$person][$action] = "$person $action $object: ";
 			continue;
 		}
 
