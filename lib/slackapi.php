@@ -55,7 +55,7 @@ class SlackAPI {
       curl_setopt($ch, CURLOPT_POST, true);
       curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
       curl_setopt($ch, CURLOPT_POSTFIELDS, $args);
-      curl_setopt($ch, CURLOPT_VERBOSE, '1');
+      //curl_setopt($ch, CURLOPT_VERBOSE, '1');
       $result = curl_exec($ch);
       curl_close($ch);
     } else {

@@ -2,6 +2,7 @@
 namespace OCA\SlackNotify;
 
 use \OCP\Config;
+use \OCP\Util;
 
 /**
  * @brief The class to handle the filesystem hooks
@@ -13,7 +14,7 @@ class Hooks {
 	 */
 	public static function register() {
 		// The connector after Activity App stores an entry in activity_mq
-		\OCP\Util::connectHook('OC_Activity', 'post_email', 'OCA\SlackNotify\Hooks', 'sendNotification');
+		Util::connectHook('OC_Activity', 'post_email', 'OCA\SlackNotify\Hooks', 'processOne');
 	}
 
         /**
@@ -45,11 +46,11 @@ class Hooks {
                 $is_dir = $rootView->is_dir('/' . \OCP\User::getUser() . '/files' . $param);
 
                 if ($is_dir) {
-                        $fileLink = \OCP\Util::linkToAbsolute('files', 'index.php', array('dir' => $param));
+                        $fileLink = Util::linkToAbsolute('files', 'index.php', array('dir' => $param));
                 } else {
                         $parentDir = (substr_count($param, '/') == 1) ? '/' : dirname($param);
                         $fileName = basename($param);
-                        $fileLink = \OCP\Util::linkToAbsolute('files', 'index.php', array(
+                        $fileLink = Util::linkToAbsolute('files', 'index.php', array(
                                 'dir' => $parentDir,
                                 'scrollto' => $fileName,
                         ));
@@ -58,11 +59,29 @@ class Hooks {
                 $param = trim($param, '/');
                 list($path, $name) = self::splitPathFromFilename($param);
                 if ($path === '') {
-			return '<' . $fileLink . '|' . \OCP\Util::sanitizeHTML($param) . '>';
+			return '<' . $fileLink . '|' . Util::sanitizeHTML($param) . '>';
                 }
 
-		return '<' . $fileLink . '|' . \OCP\Util::sanitizeHTML($name) . '>';
+		return '<' . $fileLink . '|' . Util::sanitizeHTML($name) . '>';
         }
+
+	public static function storeOne($user, $msg) {
+                $config = \OC::$server->getConfig();
+
+                /* Use locking to make sure we don't lose anything, especially since
+                 * these entries are processed by a cron job. */
+                $lock = new ExclusiveLock("/tmp/slacknotify");
+                if (!$lock->lock()) {
+                        Util::writeLog('slacknotify', "Failed to obtain lock.", Util::ERROR);
+                        return;
+                }
+
+                $vals = unserialize($config->getUserValue($user, 'slacknotify', 'notifications', array()));
+                $vals[] = $msg;
+                $config->setUserValue($user, 'slacknotify', 'notifications', serialize($vals));
+
+                $lock->unlock();
+	}
 
 	/**
 	 * @brief Accepts arguments from Activity App to use for Slack
@@ -78,7 +97,7 @@ class Hooks {
 	 *	'latest_send'   => $latestSendTime,
 	 * );
 	 */
-	public static function sendNotification($params) {
+	public static function processOne($params) {
 		if ($params['app'] !== 'files')
 			continue;
 
@@ -99,34 +118,6 @@ class Hooks {
 				$user;
 		}
 
-		self::slackSend($params['affecteduser'], $msg);
-	}
-
-	/** PRIVATE Interfaces **/
-
-	/**
-	 * @brief Call Slack API
-	 * @msg Message to print to user
-	 */
-	private static function slackSend($user, $msg) {
-		$config = \OC::$server->getConfig();
-		$xoxp = $config->getUserValue($user, 'slacknotify', 'xoxp', null);
-		$channel = $config->getUserValue($user, 'slacknotify', 'channel', null);
-		if (empty($xoxp) or empty($channel))
-			return;
-
-		$attachments = array();
-		$attachments[] = array('text' => $msg, 'color' => '#232323');
-
-		$attachments = json_encode($attachments);
-
-		$Slack = new \OCA\SlackNotify\SlackAPI($xoxp);
-		$Slack->call('chat.postMessage', array(
-			'icon_url' => 'https://files.cyphre.com/themes/svy/core/img/favicon.png',
-			'channel' => $channel,
-			'username' => 'Cyphre',
-			'parse' => 'none',
-			'attachments' => $attachments,
-		));
+		self::storeOne($params['affecteduser'], $msg);
 	}
 }

@@ -1,0 +1,1 @@
+*/2 *     * * *     www-data   [ -x /var/www/cyphre/apps/slacknotify/lib/cron.php ] && /var/www/cyphre/apps/slacknotify/lib/cron.php
