@@ -22,6 +22,7 @@ if (!empty($slackClientID) and !empty($slackClientSecret)) {
 	} else {
 		$tmpl->assign('slackEnabled', false);
 
+		// Create this now. The user keeps this UUID until the end of time
 		$uuid = \OC_Preferences::getValue($user, 'slacknotify', 'uuid');
 		if (empty($uuid)) {
 			$uuid = \OCP\Util::generateRandomBytes(32);

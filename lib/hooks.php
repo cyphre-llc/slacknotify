@@ -86,11 +86,15 @@ class Hooks {
 	public static function linkUser($user) {
 		$config = \OC::$server->getConfig();
 		$channel = $config->getUserValue($user, 'slacknotify', 'channel');
+		$name = $config->getUserValue($user, 'slacknotify', 'name');
+
+		if (empty($name))
+			$name = $user;
 
 		if (empty($channel))
 			return "*$user*";
 
-		return "<@$channel|$user>";
+		return "<@$channel|$name> ($user)";
 	}
 
 	/**

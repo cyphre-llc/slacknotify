@@ -1,5 +1,7 @@
 <?php
 
+// TODO Pass back errors to the settings page for display
+
 \OCP\JSON::checkLoggedIn();
 \OCP\JSON::checkAppEnabled('slacknotify');
 # \OCP\JSON::callCheck();
@@ -52,8 +54,13 @@ $ret = $Slack->call('oauth.access', array(
 	'code' => $code,
 ));
 
-if (empty($ret) or empty($ret['access_token'])) {
+if (empty($ret)) {
 	\OCP\JSON::error(array('data' => array('message' => $l->t('Error Accessing Server'))));
+	exit();
+}
+
+if (empty($ret['ok']) or $ret['ok'] != true) {
+	\OCP\JSON::error(array('data' => array('message' => $ret['error'])));
 	exit();
 }
 
@@ -73,6 +80,7 @@ if (empty($ret) or empty($ret['user_id'])) {
 # All looks good. Store it up.
 \OC_Preferences::setValue($user, 'slacknotify', 'xoxp', $token);
 \OC_Preferences::setValue($user, 'slacknotify', 'channel', $ret['user_id']);
+\OC_Preferences::setValue($user, 'slacknotify', 'name', $ret['user']);
 
 # Send us back to the settings page
 \OCP\Response::redirect(\OC_Helper::linkToRoute( "settings_personal" ).'#slacknotify');

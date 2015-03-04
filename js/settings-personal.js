@@ -9,7 +9,7 @@ $(document).ready(function(){
 					OC.msg.finishedSaving('#slacknotify .msg', data);
 				} else {
 					OC.msg.finishedSaving('#slacknotify .msg', data);
-					this.reload();
+					location.reload();
 				}
 			}
 		);
