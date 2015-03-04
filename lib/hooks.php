@@ -90,7 +90,7 @@ class Hooks {
 		if (empty($channel))
 			return "*$user*";
 
-		$user = "<@$channel|$user>";
+		return "<@$channel|$user>";
 	}
 
 	/**
@@ -112,7 +112,6 @@ class Hooks {
 			continue;
 
 		$user = $params['affecteduser'];
-		$user_mu = self::linkUser($user);
 
 		// Make sure this user even wants this
 		$config = \OC::$server->getConfig();
@@ -134,24 +133,24 @@ class Hooks {
 		case 'deleted_by':
 		case 'changed_by':
 			$action = substr($params['subject'], 0, -3);
-			$person = $user_mu;
+			$person = self::linkUser($user);
 			break;
 
 		case 'shared_user_self':
 			$with = self::linkUser($params['subjectparams'][1]);
-			$action = "shared this with $with";
+			$action = "shared with $with";
 			$person = "*You*";
 			break;
 
 		case 'shared_group_self':
 			$with = $params['subjectparams'][1];
-			$action = "shared this with *$with* (group)";
+			$action = "shared with *$with* (group)";
 			$person = "*You*";
 			break;
 
 		case 'shared_with_by':
-			$action = "shared this with *you*";
-			$person = $user_mu;
+			$action = "shared with *you*";
+			$person = self::linkUser($params['subjectparams'][1]);
 			break;
 
 		default:
