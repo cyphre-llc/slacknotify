@@ -76,11 +76,21 @@ class Hooks {
 			return;
 		}
 
-		$vals = unserialize($config->getUserValue($user, 'slacknotify', 'notifications', array()));
+		$vals = unserialize($config->getUserValue($user, 'slacknotify', 'notifications', ""));
 		$vals[] = $msg;
 		$config->setUserValue($user, 'slacknotify', 'notifications', serialize($vals));
 
 		$lock->unlock();
+	}
+
+	public static function linkUser($user) {
+		$config = \OC::$server->getConfig();
+		$channel = $config->getUserValue($user, 'slacknotify', 'channel');
+
+		if (empty($channel))
+			return "*$user*";
+
+		$user = "<@$channel|$user>";
 	}
 
 	/**
@@ -101,18 +111,52 @@ class Hooks {
 		if ($params['app'] !== 'files')
 			continue;
 
-		$user = \OCP\User::getUser();
+		$user = $params['affecteduser'];
+		$user_mu = self::linkUser($user);
+
+		// Make sure this user even wants this
+		$config = \OC::$server->getConfig();
+		$xoxp = $config->getUserValue($user, 'slacknotify', 'xoxp');
+		if (empty($xoxp))
+			return;
+
 		$object = self::prepareFileParam($params['subjectparams'][0]);
 
-		if (substr($params['subject'], -5) === '_self') {
+		switch ($params['subject']) {
+		case 'created_self':
+		case 'deleted_self':
+		case 'changed_self':
 			$action = substr($params['subject'], 0, -5);
-			$person = "You";
-		} else {
-			// TODO Link OTHER to Slack user, if they have enabled it
-			// https://api.slack.com/docs/formatting
+			$person = "*You*";
+			break;
 
+		case 'created_by':
+		case 'deleted_by':
+		case 'changed_by':
 			$action = substr($params['subject'], 0, -3);
-			$person = $user;
+			$person = $user_mu;
+			break;
+
+		case 'shared_user_self':
+			$with = self::linkUser($params['subjectparams'][1]);
+			$action = "shared this with $with";
+			$person = "*You*";
+			break;
+
+		case 'shared_group_self':
+			$with = $params['subjectparams'][1];
+			$action = "shared this with *$with* (group)";
+			$person = "*You*";
+			break;
+
+		case 'shared_with_by':
+			$action = "shared this with *you*";
+			$person = $user_mu;
+			break;
+
+		default:
+			Util::writeLog('slacknotify', serialize($params), Util::ERROR);
+			return;
 		}
 
 		$msg = array(
@@ -121,6 +165,6 @@ class Hooks {
 			'object' => $object
 		);
 
-		self::storeOne($params['affecteduser'], $msg);
+		self::storeOne($user, $msg);
 	}
 }

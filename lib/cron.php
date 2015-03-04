@@ -58,13 +58,19 @@ function slackSend($xoxp, $user, $msgs)
 
 	foreach ($msgs as $person) {
 		foreach ($person as $target) {
+			// Replace <foo|bar> with bar
 			$pattern = '/<[^|]+\|([^>]+)>/i';
-			$replacement = '$1';
-			$fallback = preg_replace($pattern, $replacement, $target);
+			$fallback = preg_replace($pattern, '$1', $target);
+
+			// Remove occurences of *
+			$pattern = '/(\*)/i';
+			$fallback = preg_replace($pattern, '', $fallback);
+
 			$attachments[] = array(
 				'text' => $target,
 				'color' => '#232323',
 				'fallback' => $fallback,
+				"mrkdwn_in" => array("text"),
 			);
 		}
 	}
