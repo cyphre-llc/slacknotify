@@ -11,6 +11,7 @@ $config = \OC::$server->getConfig();
 
 $config->setUserValue($user, 'slacknotify', 'xoxp', '');
 $config->setUserValue($user, 'slacknotify', 'channel', '');
+$config->setUserValue($user, 'slacknotify', 'team_id', '');
 $config->setUserValue($user, 'slacknotify', 'name', '');
 $config->setUserValue($user, 'slacknotify', 'notifications', '');
 

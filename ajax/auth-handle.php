@@ -81,6 +81,7 @@ if (empty($ret) or empty($ret['user_id'])) {
 \OC_Preferences::setValue($user, 'slacknotify', 'xoxp', $token);
 \OC_Preferences::setValue($user, 'slacknotify', 'channel', $ret['user_id']);
 \OC_Preferences::setValue($user, 'slacknotify', 'name', $ret['user']);
+\OC_Preferences::setValue($user, 'slacknotify', 'team_id', $ret['team_id']);
 
 # Send us back to the settings page
 \OCP\Response::redirect(\OC_Helper::linkToRoute( "settings_personal" ).'#slacknotify');

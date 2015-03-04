@@ -83,8 +83,15 @@ class Hooks {
 		$lock->unlock();
 	}
 
-	public static function linkUser($user) {
+	public static function linkUser($user, $other) {
 		$config = \OC::$server->getConfig();
+
+		// Check if on the same team.
+		$team_id = $config->getUserValue($user, 'slacknotify', 'team_id');
+		$other_team_id = $config->getUserValue($other, 'slacknotify', 'team_id');
+		if ($team_id !== $other_team_id)
+			return "*$user*";
+
 		$channel = $config->getUserValue($user, 'slacknotify', 'channel');
 		$name = $config->getUserValue($user, 'slacknotify', 'name');
 
@@ -137,11 +144,11 @@ class Hooks {
 		case 'deleted_by':
 		case 'changed_by':
 			$action = substr($params['subject'], 0, -3);
-			$person = self::linkUser($user);
+			$person = self::linkUser($params['subjectparams'][1], $user);
 			break;
 
 		case 'shared_user_self':
-			$with = self::linkUser($params['subjectparams'][1]);
+			$with = self::linkUser($params['subjectparams'][1], $user);
 			$action = "shared with $with";
 			$person = "*You*";
 			break;
@@ -154,7 +161,7 @@ class Hooks {
 
 		case 'shared_with_by':
 			$action = "shared with *you*";
-			$person = self::linkUser($params['subjectparams'][1]);
+			$person = self::linkUser($params['subjectparams'][1], $user);
 			break;
 
 		default:
