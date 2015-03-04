@@ -48,14 +48,18 @@ function getUserValue($user, $key)
 	return $row['configvalue'];
 }
 
-function slackSend($xoxp, $user, $msg)
+function slackSend($xoxp, $user, $msgs)
 {
         $channel = getUserValue($user, 'channel');
         if (empty($xoxp) or empty($channel))
                 return;
 
 	$attachments = array();
-	$attachments[] = array('text' => $msg, 'color' => '#232323');
+
+	foreach ($msgs as $person) {
+		foreach ($person as $target)
+			$attachments[] = array('text' => $target, 'color' => '#232323');
+	}
 
 	$attachments = json_encode($attachments);
 
@@ -94,14 +98,32 @@ while ($row = $res->fetch_array()) {
 
 	$notif = unserialize($notif);
 
-	$msg = "";
-	foreach ($notif as $line) {
-		if (!empty($msg))
-			$msg .= "\n";
-		$msg .= $line;
+	$msgs = array();
+
+	foreach ($notif as $vals) {
+		$person = $vals['person'];
+		$object = $vals['object'];
+		$action = $vals['action'];
+
+		// First time seeing this person
+		if (empty($msgs[$person])) {
+			$msgs[$person] = array(
+				$action => "$person $action $object",
+			);
+			continue;
+		}
+
+		// First time seeing this action for this person
+		if (empty($msgs[$person][$action])) {
+			$msgs[$person][$action] = "$person $action $object";
+			continue;
+		}
+
+		// We've seen this, so just append object
+		$msgs[$person][$action] .= ", $object";
 	}
 
-	slackSend($xoxp, $user, $msg);
+	slackSend($xoxp, $user, $msgs);
 
 	clearNotifications($user);
 

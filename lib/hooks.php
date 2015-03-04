@@ -66,21 +66,21 @@ class Hooks {
         }
 
 	public static function storeOne($user, $msg) {
-                $config = \OC::$server->getConfig();
+		$config = \OC::$server->getConfig();
 
-                /* Use locking to make sure we don't lose anything, especially since
-                 * these entries are processed by a cron job. */
-                $lock = new ExclusiveLock("/tmp/slacknotify");
-                if (!$lock->lock()) {
-                        Util::writeLog('slacknotify', "Failed to obtain lock.", Util::ERROR);
-                        return;
-                }
+		/* Use locking to make sure we don't lose anything, especially since
+		 * these entries are processed by a cron job. */
+		$lock = new ExclusiveLock("/tmp/slacknotify");
+		if (!$lock->lock()) {
+			Util::writeLog('slacknotify', "Failed to obtain lock.", Util::ERROR);
+			return;
+		}
 
-                $vals = unserialize($config->getUserValue($user, 'slacknotify', 'notifications', array()));
-                $vals[] = $msg;
-                $config->setUserValue($user, 'slacknotify', 'notifications', serialize($vals));
+		$vals = unserialize($config->getUserValue($user, 'slacknotify', 'notifications', array()));
+		$vals[] = $msg;
+		$config->setUserValue($user, 'slacknotify', 'notifications', serialize($vals));
 
-                $lock->unlock();
+		$lock->unlock();
 	}
 
 	/**
@@ -105,18 +105,21 @@ class Hooks {
 		$object = self::prepareFileParam($params['subjectparams'][0]);
 
 		if (substr($params['subject'], -5) === '_self') {
-			// You (created|deleted|changed) FILE
-			$msg = "You " . substr($params['subject'], 0, -5) .
-				" " . $object;
+			$action = substr($params['subject'], 0, -5);
+			$person = "You";
 		} else {
-			
-			// FILE was (created|deleted|changed) by OTHER
 			// TODO Link OTHER to Slack user, if they have enabled it
 			// https://api.slack.com/docs/formatting
-			$msg = $other . " was " .
-				substr($params['activity'], 0, -3) . " by " .
-				$user;
+
+			$action = substr($params['subject'], 0, -3);
+			$person = $user;
 		}
+
+		$msg = array(
+			'person' => $person,
+			'action' => $action,
+			'object' => $object
+		);
 
 		self::storeOne($params['affecteduser'], $msg);
 	}
