@@ -147,6 +147,11 @@ class Hooks {
 			$person = self::linkUser($params['subjectparams'][1], $user);
 			break;
 
+		case 'shared_link_self':
+			$person = "*You*";
+			$action = "created a public link";
+			break;
+
 		case 'shared_user_self':
 			$with = self::linkUser($params['subjectparams'][1], $user);
 			$action = "shared with $with";
