@@ -11,7 +11,15 @@
 		value="<?php echo($_['slackClientSecret']); ?>"/>
 	<label for="slackClientSecret"><?php p($l->t("Client Secret")); ?></label>
 	<br/>
-	<button type="button" name="submitSlackKeys"><?php p($l->t("Save Credentials")); ?>
+        <input type="text" name="slackBotName" id="slackBotName"
+                value="<?php echo($_['slackBotName']); ?>"/>
+        <label for="slackBotName"><?php p($l->t("Slack Bot Name")); ?></label>
+        <br/>
+        <input type="text" name="slackIconUrl" id="slackIconUrl"
+                value="<?php echo($_['slackIconUrl']); ?>"/>
+        <label for="slackIconUrl"><?php p($l->t("Slack Bot Icon URL")); ?></label>
+        <br/>
+	<button type="button" name="submitSlackKeys"><?php p($l->t("Save")); ?>
 	</button>
 	<span class="msg"></span>
 </form>

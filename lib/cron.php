@@ -29,6 +29,24 @@ function clearNotifications($user)
 		"configkey='notifications' AND userid='" . $user . "'");
 }
 
+function getAppValue($key, $default)
+{
+	global $db, $CONFIG;
+
+	$key = $db->real_escape_string($key);
+
+	$res = $db->query("SELECT * FROM " . $CONFIG['dbtableprefix'] .
+		"appconfig " . "WHERE appid='slacknotify' AND configkey='" .
+		$key . "'");
+
+	if ($res === false or $res->num_rows != 1)
+		return $default;
+
+	$row = $res->fetch_array();
+
+	return empty($row['configvalue']) ? $default : $row['configvalue'];
+}
+
 function getUserValue($user, $key)
 {
 	global $db, $CONFIG;
@@ -50,9 +68,9 @@ function getUserValue($user, $key)
 
 function slackSend($xoxp, $user, $msgs)
 {
-        $channel = getUserValue($user, 'channel');
-        if (empty($xoxp) or empty($channel))
-                return;
+	$channel = getUserValue($user, 'channel');
+	if (empty($xoxp) or empty($channel))
+		return;
 
 	$attachments = array();
 
@@ -77,11 +95,15 @@ function slackSend($xoxp, $user, $msgs)
 
 	$attachments = json_encode($attachments);
 
+	$bot_name = getAppValue('slackBotName', 'Cyphre');
+	$icon_url = getAppValue('slackIconUrl',
+		'https://files.cyphre.com/themes/svy/core/img/favicon.png');
+
 	$Slack = new \OCA\SlackNotify\SlackAPI($xoxp);
 	$Slack->call('chat.postMessage', array(
-		'icon_url' => 'https://files.cyphre.com/themes/svy/core/img/favicon.png',
+		'icon_url' => $icon_url,
 		'channel' => $channel,
-		'username' => 'Cyphre',
+		'username' => $bot_name,
 		'parse' => 'none',
 		'attachments' => $attachments,
 	));
