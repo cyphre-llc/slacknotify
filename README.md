@@ -1,4 +1,4 @@
-# Slack Notifification for ownCloud
+# Slack Notification for ownCloud
 
 Provides notifications via [Slack](https://slack.com/) concerning file 
 activity.
