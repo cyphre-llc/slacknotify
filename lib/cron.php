@@ -95,9 +95,8 @@ function slackSend($xoxp, $user, $msgs)
 
 	$attachments = json_encode($attachments);
 
-	$bot_name = getAppValue('slackBotName', 'Cyphre');
-	$icon_url = getAppValue('slackIconUrl',
-		'https://files.cyphre.com/themes/svy/core/img/favicon.png');
+	$bot_name = getAppValue('slackBotName', '');
+	$icon_url = getAppValue('slackIconUrl', '');
 
 	$Slack = new \OCA\SlackNotify\SlackAPI($xoxp);
 	$Slack->call('chat.postMessage', array(
