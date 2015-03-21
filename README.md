@@ -35,21 +35,6 @@ them notifications.
 To control which notifications are sent, select or unselect items in
 the Activity app (Personal page as well) under the Stream column.
 
-### The cron job
-
-I know, this isn't the "ownCloud Way", but I found that this bit of
-work was sometimes too lengthy to process as ajax, so I created a
-separate cron job to run. I added this to `/etc/cron.d/slack`:
-
-```
-*/2 *     * * *     www-data   [ -x /var/www/owncloud/apps/slacknotify/lib/cron.php ] && /var/www/owncloud/apps/slacknotify/lib/cron.php
-```
-
-The script recognizes which directory it is in, so it can find the
-config.php and use it to access the database.
-
-Feel free to offer patches for a better way to handle this.
-
 ### Credits, License and Copyright
 Author: [Ben Collins](mailto:ben.c@servergy.com)
 
