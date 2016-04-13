@@ -12,7 +12,7 @@ app being installed and enabled on your ownCloud installaton. It makes use of
 the Stream hooks in order to receive notifications. This was done to simplify
 the code.
 
-You will also need the one-liner fix to the activity app from [this commit](https://github.com/servergy/activity/commit/25966cbc5f6a8cf12a62ae9a697c3a1649f8a3d0),
+You will also need the one-liner fix to the activity app from [this commit](https://github.com/cyphre-llc/activity/commit/25966cbc5f6a8cf12a62ae9a697c3a1649f8a3d0),
 or you can simply use that repo instead of the ownCloud one.
 
 Next, go to the [Slack API](https://api.slack.com/applications) page and
@@ -36,8 +36,8 @@ To control which notifications are sent, select or unselect items in
 the Activity app (Personal page as well) under the Stream column.
 
 ### Credits, License and Copyright
-Author: [Ben Collins](mailto:ben.c@servergy.com)
+Author: [Ben Collins](mailto:ben@cyphre.com)
 
 License: AGPL
 
-Copyright: 2015 by [Servergy, Inc.](http://www.servergy.com)
+Copyright: 2015 by [Cyphre, LLC](https://www.cyphre.com)
